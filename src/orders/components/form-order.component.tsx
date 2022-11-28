@@ -1,23 +1,29 @@
 import * as React from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import {Content} from "../models/content-interface";
-import {useEffect, useMemo, useState} from "react";
 import {
     Button,
     Dialog,
     DialogActions,
-    DialogContent, DialogTitle,
+    DialogContent,
+    DialogTitle,
     FormControl,
-    InputLabel, ListItemText,
+    InputLabel,
     MenuItem,
-    Modal, OutlinedInput,
-    Select, SelectChangeEvent, Theme,
-    Typography, useTheme
+    OutlinedInput,
+    Select,
+    SelectChangeEvent,
+    useTheme
 } from '@mui/material';
 import OrderService from "../services/order-api.services";
 import {ProductsInterface} from "../models/products-interface";
 import {ProductsContentInterface} from "../models/products-content-interface";
+import {useParams} from "react-router-dom";
+import TableOrdersComponent from "./table-orders.component";
+import OrderDetail from "./table-produc-order.component";
+
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
 
@@ -31,17 +37,18 @@ const MenuProps = {
 };
 
 
-
 interface SelectedOrder {
     data: Content,
     tittle: string
 }
 
 export default function FormOrderComponent({data, tittle}: SelectedOrder) {
-    const [ordernNum, setOrderNum] = useState(data.orderNumber.toString());
-    const [date, setDate] = useState(new Date());
-    const [numProducts, setNumProducts] = useState(data.products.length);
-    const [finalPrice, setFinalPrice] = useState(data.finalPrice.toString());
+
+    const params = useParams();
+    const [ordernNum, setOrderNum] = useState<number>(data.orderNumber);
+    const [date, setDate] = useState<Date>(new Date());
+    const [numProducts, setNumProducts] = useState(0);
+    const [finalPrice, setFinalPrice] = useState<number>(data.finalPrice);
     const [products, setProducts] = useState<ProductsInterface>();
     const service = useMemo<OrderService>(() => new OrderService(), []);
     const [open, setOpen] = useState(false);
@@ -49,11 +56,23 @@ export default function FormOrderComponent({data, tittle}: SelectedOrder) {
     const [addedProduct, setAddedProduct] = useState<ProductsContentInterface>();
     const [quantityForSelectedProd, setQuantityForSelectedProd] = useState<any>();
 
+    const [idForNewProd, setIdForNewProd] = useState<number>(0);
+
     useEffect(
         () => {
             const loadProducts = async () => {
                 const response = (await service.getAllProducts());
                 setProducts(response);
+            }
+            const createNewOrder = async () => {
+                const response = await service.createNewOrder();
+                setFinalPrice(response.finalPrice);
+                setOrderNum(response.orderNumber);
+                setDate(response.date);
+                setIdForNewProd(response.id);
+            }
+            if (params.id == '0') {
+                createNewOrder();
             }
             loadProducts();
         }
@@ -64,8 +83,6 @@ export default function FormOrderComponent({data, tittle}: SelectedOrder) {
     }
     //NOTE: modal properties
     const handleChangeForSelectedProduct = (event: SelectChangeEvent<any>) => {
-        //console.log()
-        //console.log(products.content.filter(e => e.name === event.target.value).at(0))
         setAddedProduct({
             id: event.target.value.id,
             price: event.target.value.price,
@@ -80,7 +97,8 @@ export default function FormOrderComponent({data, tittle}: SelectedOrder) {
         setOpen(true);
     };
 
-    const handleClose = (event: React.SyntheticEvent<unknown>, reason?: string) => {
+    const handleClose = async (event: React.SyntheticEvent<unknown>, reason?: string) => {
+        await addProductsToOrder();
         if (reason !== 'backdropClick') {
             setOpen(false);
         }
@@ -88,7 +106,7 @@ export default function FormOrderComponent({data, tittle}: SelectedOrder) {
 
 
     const orderNumChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setOrderNum(event.target.value);
+        setOrderNum(Number(event.target.value));
     };
 
     const quantityForProdHandle = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,7 +124,15 @@ export default function FormOrderComponent({data, tittle}: SelectedOrder) {
         })
     }
 
+    const addProductsToOrder = async () => {
+        let updatedPrice;
+        updatedPrice = (await service.addProductToOrder(Number(params.id) == 0 ? idForNewProd : Number(params.id), addedProduct?.id!, quantityForSelectedProd)).finalPrice;
+        setFinalPrice(updatedPrice)
+    }
+
     return (
+        <div>
+
         <Box
             component="form"
             sx={{
@@ -127,7 +153,7 @@ export default function FormOrderComponent({data, tittle}: SelectedOrder) {
                 id="outlined-name"
                 label="Date"
                 disabled
-                value={date.toDateString()}
+                value={new Date(date).toDateString()}
             />
             <TextField
                 id="outlined-name"
@@ -142,19 +168,19 @@ export default function FormOrderComponent({data, tittle}: SelectedOrder) {
                 value={finalPrice}
             />
 
-            <Button onClick={handleClickOpen}>Open select dialog</Button>
+            <Button onClick={handleClickOpen}>Add new product to this order</Button>
             <Dialog disableEscapeKeyDown open={open} onClose={handleClose}>
                 <DialogTitle>Select the product</DialogTitle>
                 <DialogContent>
-                    <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
-                        <FormControl sx={{ m: 1, minWidth: 120 }}>
+                    <Box component="form" sx={{display: 'flex', flexWrap: 'wrap'}}>
+                        <FormControl sx={{m: 1, minWidth: 120}}>
                             <InputLabel htmlFor="demo-dialog-native">Product</InputLabel>
                             <Select
                                 labelId="demo-multiple-name-label"
                                 id="demo-multiple-name"
-                                value={products.content}
+                                value={addedProduct}
                                 onChange={handleChangeForSelectedProduct}
-                                input={<OutlinedInput label="Name" />}
+                                input={<OutlinedInput label="Name"/>}
                                 MenuProps={MenuProps}
                             >
 
@@ -162,7 +188,6 @@ export default function FormOrderComponent({data, tittle}: SelectedOrder) {
                                     // @ts-ignore
                                     <MenuItem
                                         key={prod.id}
-
                                         value={prod}
                                         name={prod.name}
                                     >
@@ -185,7 +210,11 @@ export default function FormOrderComponent({data, tittle}: SelectedOrder) {
                     <Button onClick={handleClose}>Ok</Button>
                 </DialogActions>
             </Dialog>
-            <button onClick={() => saveChanges()}>Save</button>
+            
         </Box>
+            <div>
+                <OrderDetail service={service}  id={params.id == '0' ? idForNewProd : Number(params.id)} />
+            </div>
+        </div>
     );
 }

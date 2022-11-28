@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {useMemo} from 'react';
 import {styled} from '@mui/material/styles';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -7,12 +8,11 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import {Content, Status} from "../models/content-interface";
+import {Status} from "../models/content-interface";
 import {OrderInterface} from "../models/order-interface";
-import {useMemo} from "react";
 import {useNavigate} from "react-router-dom";
 
-const StyledTableCell = styled(TableCell)(({theme}) => ({
+export const StyledTableCell = styled(TableCell)(({theme}) => ({
     [`&.${tableCellClasses.head}`]: {
         backgroundColor: theme.palette.common.black,
         color: theme.palette.common.white,
@@ -22,7 +22,7 @@ const StyledTableCell = styled(TableCell)(({theme}) => ({
     },
 }));
 
-const StyledTableRow = styled(TableRow)(({theme}) => ({
+export const StyledTableRow = styled(TableRow)(({theme}) => ({
     '&:nth-of-type(odd)': {
         backgroundColor: theme.palette.action.hover,
     },
@@ -37,30 +37,30 @@ function createData(
     orderNumber: number,
     date: Date,
     finalPrice: number,
-    numProducts: number,
     status: string
 ) {
-    return {id, orderNumber, date, finalPrice, numProducts, status};
+    return {id, orderNumber, date, finalPrice, status};
 }
 
 
 interface CustomizedTableProps {
-    data: OrderInterface
+    data: OrderInterface[]
 }
 
 export default function TableOrdersComponent({data}: CustomizedTableProps) {
 
 
     const rows = useMemo(() =>
-            data.content.map((e) =>
+            data.map((e) =>
                 createData(e.id, e.orderNumber,
-                    new Date(e.date), e.finalPrice, e.products.length, e.status.toString())
+                    new Date(e.date), e.finalPrice, e.status.toString())
             )
         , [data]);
 
     const navigate= useNavigate();
     const navigateToEditPage =(id: number) => {
-        if (data.content.filter(e => e.id === id).at(0)!.status != Status.Completed){
+        console.log(data)
+        if (data.filter(e => e.id === id).at(0)!.status != Status.Completed){
             navigate('/edit/'+ id.toString());
         }
     }
@@ -75,7 +75,7 @@ export default function TableOrdersComponent({data}: CustomizedTableProps) {
                         <StyledTableCell align="right">Order Number</StyledTableCell>
                         <StyledTableCell align="right">Date</StyledTableCell>
                         <StyledTableCell align="right">Final Price</StyledTableCell>
-                        <StyledTableCell align="right"># Products</StyledTableCell>
+                        {/*<StyledTableCell align="right"># Products</StyledTableCell>*/}
                         <StyledTableCell align="right">Status</StyledTableCell>
                     </TableRow>
                 </TableHead>
@@ -89,7 +89,7 @@ export default function TableOrdersComponent({data}: CustomizedTableProps) {
                             <StyledTableCell align="right">{row.orderNumber}</StyledTableCell>
                             <StyledTableCell align="right">{row.date.toDateString()}</StyledTableCell>
                             <StyledTableCell align="right">{row.finalPrice}</StyledTableCell>
-                            <StyledTableCell align="right">{row.numProducts}</StyledTableCell>
+                            {/*<StyledTableCell align="right">{row.numProducts}</StyledTableCell>*/}
                             <StyledTableCell align="right">{row.status}</StyledTableCell>
                         </StyledTableRow>
                     ))}

@@ -6,14 +6,15 @@ import {useNavigate} from "react-router-dom";
 
 export default  function MyOrders() {
     const navigate= useNavigate();
-    const [orders, setOrders] = useState<OrderInterface>();
+    const [orders, setOrders] = useState<Array<OrderInterface>>();
     const orderService = useMemo<OrderService>(()=> new OrderService(), []);
 
     useEffect(
         () => {
             const fetchOrders = async () => {
                const response=  await orderService.getAllOrders();
-               setOrders(response);
+               // @ts-ignore
+                setOrders(response);
                console.log(orders)
             }
             fetchOrders();

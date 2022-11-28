@@ -8,7 +8,7 @@ export default function NewOrder() {
 
     const params = useParams();
     const orderService = useMemo<OrderService>(() => new OrderService(), []);
-    console.log(params.id)
+    //const [orderProduct, setOrderProduct] = useState<>();
 
     const [actualOrder, setActualOrder] = useState<Content>();
     const [tittle, setTittle] = useState<string>();
@@ -20,13 +20,12 @@ export default function NewOrder() {
                     orderNumber: 0,
                     date: new Date(),
                     status: Status.Pending,
-                    products: [],
                     finalPrice: 0
                 })
             }
             const validateExistingOrder = async () => {
 
-                const response = (await orderService.getAllOrders()).content.filter(e => e.id.toString() === params.id).at(0);
+                const response = (await orderService.getAllOrders()).filter(e => e.id.toString() === params.id).at(0);
                 console.log({response})
                 if (response == null) {
                     setDefaultValues();
@@ -49,6 +48,7 @@ export default function NewOrder() {
     return (
         <div>
             <FormOrderComponent  data={actualOrder!} tittle={tittle!}/>
+
         </div>
     )
 }
